@@ -3,3 +3,5 @@ _fields_crop.png
 .env
 __pycache__/
 *.pyc
+*.db
+_test_deposits.db

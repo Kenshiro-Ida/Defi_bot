@@ -46,11 +46,15 @@ Telegram channel **@aidefiofficially** (https://t.me/aidefiofficially) using a b
 
 JSON body (or form-encoded). Accepted field names:
 
-| Field   | Accepted keys                                                        |
-|---------|----------------------------------------------------------------------|
-| Amount  | `amount`, `value`, `amt`                                             |
-| Address | `address`, `user_address`, `userAddress`, `wallet`, `walletAddress` |
-| Hash    | `hash`, `txHash`, `tx_hash`, `transactionHash`                      |
+| Field      | Accepted keys                                                        |
+|------------|----------------------------------------------------------------------|
+| Amount     | `amount`, `value`, `amt`                                            |
+| Address    | `address`, `user_address`, `userAddress`, `wallet`, `walletAddress` |
+| Hash       | `hash`, `txHash`, `tx_hash`, `transactionHash`                     |
+| From where | `from_where`, `fromWhere`, `source` (optional, defaults to `website`) |
+
+Every request is recorded in the deposits database (see below), including the
+`from_where` source and whether the Telegram post succeeded.
 
 Example:
 
@@ -70,9 +74,59 @@ Success response:
 { "ok": true, "message": "deposit image sent to Telegram", "telegram_message_id": 123 }
 ```
 
+### `GET /deposits`
+
+Returns stored deposits, newest first. Optional query params:
+
+| Param        | Meaning                                  |
+|--------------|------------------------------------------|
+| `limit`      | max rows (default 100, capped at 1000)   |
+| `offset`     | pagination offset                        |
+| `from_where` | filter by source, e.g. `website`/`script`|
+| `address`    | filter by user address                   |
+
+Example: `GET /deposits?from_where=script&limit=20`
+
+```json
+{
+  "ok": true,
+  "total": 42,
+  "count": 20,
+  "deposits": [
+    {
+      "id": 42,
+      "amount": "1,000",
+      "address": "0x...",
+      "tx_hash": "0x...",
+      "from_where": "website",
+      "status": "sent",
+      "telegram_message_id": 123,
+      "error": null,
+      "created_at": "2026-09-04T21:30:03+00:00"
+    }
+  ]
+}
+```
+
 ### `GET /health`
 
 Returns `{ "status": "ok" }`.
+
+## Database
+
+Every deposit is stored in a `deposits` table with columns: `id`, `amount`,
+`address`, `tx_hash`, `from_where`, `status` (`sent` / `telegram_error` /
+`error`), `telegram_message_id`, `error`, `created_at`.
+
+The backend is chosen automatically:
+
+- **PostgreSQL** when `DATABASE_URL` is set. Use this on Render — its filesystem
+  is ephemeral, so a SQLite file would be wiped on every redeploy. Create a free
+  Render PostgreSQL instance and set its `DATABASE_URL` env var on the service.
+- **SQLite** otherwise (local dev). Stored at `deposits.db` (override with
+  `SQLITE_PATH`). This file is gitignored.
+
+The table is created automatically on startup.
 
 ## Files
 
