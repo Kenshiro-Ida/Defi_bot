@@ -12,11 +12,19 @@ Run:
 import os
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from image_filler import fill_deposit_image
 from telegram_client import TelegramError, send_photo
 
 app = Flask(__name__)
+
+# CORS: allow the frontend origin(s) to call /deposit from the browser.
+# Set ALLOWED_ORIGINS as a comma-separated list (e.g.
+# "https://trustbet.pro,https://www.trustbet.pro"); defaults to "*".
+_origins_env = os.environ.get("ALLOWED_ORIGINS", "*").strip()
+_origins = "*" if _origins_env in ("", "*") else [o.strip() for o in _origins_env.split(",") if o.strip()]
+CORS(app, resources={r"/deposit": {"origins": _origins}, r"/health": {"origins": _origins}})
 
 # Accept a few common key spellings for each field.
 FIELD_ALIASES = {
