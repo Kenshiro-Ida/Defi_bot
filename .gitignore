@@ -1,0 +1,5 @@
+_preview.png
+_fields_crop.png
+.env
+__pycache__/
+*.pyc
